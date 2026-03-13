@@ -35,10 +35,11 @@ spaces: spaces.sh
 noexec: noexec.sh
 	@./noexec.sh
 
-sorted: sorted.sh sorted_codeopt.sh sorted_opcodes.sh
+sorted: sorted.sh sorted_codeopt.sh sorted_opcodes.sh sorted_ranked.sh
 	@./sorted.sh
 	@./sorted_codeopt.sh
 	@./sorted_opcodes.sh
+	@./sorted_ranked.sh
 
 checksp: checksp.sh
 	@./checksp.sh
