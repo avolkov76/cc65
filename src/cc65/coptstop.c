@@ -60,6 +60,7 @@ typedef int (*PreCondFunc) (const StackOpData* D);
 typedef struct OptFuncDesc OptFuncDesc;
 struct OptFuncDesc {
     const char*         Name;           /* Name of the replaced runtime function */
+    unsigned            Rank;           /* Order of priority for same-op variants */
     OptFunc             Func;           /* Function pointer */
     PreCondFunc         PreCond;        /* Precondition predicate pointer */
 };
@@ -72,41 +73,26 @@ struct OptFuncDesc {
 
 
 
-static int SameRegAValueAtOp (const StackOpData* D, CodeEntry* OpEntry)
+static int SameRegAValueAtOp (const StackOpData* D)
 /* Check if Rhs Reg A at OpIndex == Lhs Reg A at PushIndex */
 {
-    CodeEntry* PushEntry;
+    CHECK (D->PushEntry != 0 && D->OpEntry != 0);
 
-    CHECK (D->PushIndex >= 0);
-    PushEntry = CS_GetEntry (D->Code, D->PushIndex);
-
-    return
-        RegValIsKnown (PushEntry->RI->In.RegA) &&
-        RegValIsKnown (OpEntry->RI->In.RegA) &&
-        PushEntry->RI->In.RegA == OpEntry->RI->In.RegA;
+    return RegValIsKnown (D->PushEntry->RI->In.RegA) &&
+           RegValIsKnown (D->OpEntry->RI->In.RegA) &&
+           D->PushEntry->RI->In.RegA == D->OpEntry->RI->In.RegA;
 }
 
 
 
-static int SameRegXValueAtOp (const StackOpData* D, CodeEntry* OpEntry)
+static int SameRegXValueAtOp (const StackOpData* D)
 /* Check if Rhs Reg X at OpIndex == Lhs Reg X at PushIndex */
 {
-    CodeEntry* PushEntry;
+    CHECK (D->PushEntry != 0 && D->OpEntry != 0);
 
-    CHECK (D->PushIndex >= 0);
-    PushEntry = CS_GetEntry (D->Code, D->PushIndex);
-
-    /* ### This is a temporary workaround, removable in next phases. */
-    if (OpEntry == 0) {
-        /* Not provided; then OpIndex must be present */
-        CHECK (D->OpIndex >= 0);
-        OpEntry = CS_GetEntry (D->Code, D->OpIndex);
-    }
-
-    return
-        RegValIsKnown (PushEntry->RI->In.RegX) &&
-        RegValIsKnown (OpEntry->RI->In.RegX) &&
-        PushEntry->RI->In.RegX == OpEntry->RI->In.RegX;
+    return RegValIsKnown (D->PushEntry->RI->In.RegX) &&
+           RegValIsKnown (D->OpEntry->RI->In.RegX) &&
+           D->PushEntry->RI->In.RegX == D->OpEntry->RI->In.RegX;
 }
 
 
@@ -351,7 +337,7 @@ static int WithSameXMustHaveTempZP (const StackOpData* D)
 ** ZP with AddStoreLhsA() or similar.
 */
 {
-    return SameRegXValueAtOp (D, 0) && HaveUnusedTempZPLoc (D);
+    return SameRegXValueAtOp (D) && HaveUnusedTempZPLoc (D);
 }
 
 
@@ -365,7 +351,7 @@ static int WithSameXCanUseRemovableRhsWithTempZP (const StackOpData* D)
 ** and a temp ZP location is available.
 */
 {
-    return SameRegXValueAtOp (D, 0) && RhsIsDirectLoad (D) &&
+    return SameRegXValueAtOp (D) && RhsIsDirectLoad (D) &&
            RhsIsRemovable (D) && HaveUnusedTempZPLoc (D);
 }
 
@@ -1547,7 +1533,7 @@ static unsigned Opt_a_tosicmp (StackOpData* D)
     RegInfo*    RI;
     const char* Arg;
 
-    if (!SameRegAValueAtOp (D, D->OpEntry)) {
+    if (!SameRegAValueAtOp (D)) {
         /* Because of SameRegAValueAtOp */
         CHECK (D->Rhs.A.ChgIndex >= 0);
 
@@ -1768,56 +1754,52 @@ static unsigned Opt_a_tosxor (StackOpData* D)
 **  advertises here. Unhandled advertised cases will result in stack corruption,
 **  because OptStackOps() is committed at the point of call and cannot back out.
 */
-/* The first column of these two tables must be sorted in lexical order */
-
+/* The first + second columns of this table must be sorted in lexical order.
+** Note: For sorting to work, do not exceed 1 digit in Rank literals,
+** or will need to switch to 3-digit octals.
+*/
 /* CAUTION: table must be sorted for bsearch */
 static const OptFuncDesc FuncTable[] = {
-/* BEGIN SORTED.SH */
-    { "___bzero",   Opt___bzero,   WithAXlt100CanUseRegVarOrTempZP       },
-    { "staspidx",   Opt_staspidx,  CanUseRegVarOrTempZP                  },
-    { "staxspidx",  Opt_staxspidx, WithUnusedACanUseRegVarOrTempZP       },
-    { "tosaddax",   Opt_tosaddax,  MustHaveTempZP                        },
-    { "tosandax",   Opt_tosandax,  MustHaveTempZP                        },
-    { "tosaslax",   Opt_tosaslax,  MustHaveTempZP                        },
-    { "tosasrax",   Opt_tosasrax,  MustHaveTempZP                        },
-    { "toseqax",    Opt_toseqax,   CanUseDirectWithRemovableRhsAndTempZP },
-    { "tosgeax",    Opt_tosgeax,   CanUseRemovableRhsWithTempZP          },
-    { "tosltax",    Opt_tosltax,   CanUseRemovableRhsWithTempZP          },
-    { "tosneax",    Opt_tosneax,   CanUseDirectWithRemovableRhsAndTempZP },
-    { "tosorax",    Opt_tosorax,   MustHaveTempZP                        },
-    { "tosshlax",   Opt_tosshlax,  MustHaveTempZP                        },
-    { "tosshrax",   Opt_tosshrax,  MustHaveTempZP                        },
-    { "tossubax",   Opt_tossubax,  CanUseRemovableRhsWithTempZP          },
-    { "tosugeax",   Opt_tosugeax,  CanUseRemovableRhsWithTempZP          },
-    { "tosugtax",   Opt_tosugtax,  CanUseRemovableRhsWithTempZP          },
-    { "tosuleax",   Opt_tosuleax,  CanUseRemovableRhsWithTempZP          },
-    { "tosultax",   Opt_tosultax,  CanUseRemovableRhsWithTempZP          },
-    { "tosxorax",   Opt_tosxorax,  MustHaveTempZP                        },
-/* END SORTED.SH */
+/* BEGIN SORTED_RANKED.SH */
+    { "___bzero",  2, Opt___bzero,   WithAXlt100CanUseRegVarOrTempZP       },
+    { "staspidx",  2, Opt_staspidx,  CanUseRegVarOrTempZP                  },
+    { "staxspidx", 2, Opt_staxspidx, WithUnusedACanUseRegVarOrTempZP       },
+    { "tosaddax",  2, Opt_tosaddax,  MustHaveTempZP                        },
+    { "tosandax",  1, Opt_a_tosand,  WithSameXCanUseRemovableRhsWithTempZP },
+    { "tosandax",  2, Opt_tosandax,  MustHaveTempZP                        },
+    { "tosaslax",  2, Opt_tosaslax,  MustHaveTempZP                        },
+    { "tosasrax",  2, Opt_tosasrax,  MustHaveTempZP                        },
+    { "toseqax",   1, Opt_a_toseq,   WithSameXMustHaveTempZP               },
+    { "toseqax",   2, Opt_toseqax,   CanUseDirectWithRemovableRhsAndTempZP },
+    { "tosgeax",   1, Opt_a_tosuge,  WithSameXMustHaveTempZP               },
+    { "tosgeax",   2, Opt_tosgeax,   CanUseRemovableRhsWithTempZP          },
+    { "tosgtax",   1, Opt_a_tosugt,  WithSameXMustHaveTempZP               },
+    { "tosicmp",   1, Opt_a_tosicmp, WithSameXMustHaveTempZP               },
+    { "tosleax",   1, Opt_a_tosule,  WithSameXMustHaveTempZP               },
+    { "tosltax",   1, Opt_a_tosult,  WithSameXMustHaveTempZP               },
+    { "tosltax",   2, Opt_tosltax,   CanUseRemovableRhsWithTempZP          },
+    { "tosneax",   1, Opt_a_tosne,   WithSameXMustHaveTempZP               },
+    { "tosneax",   2, Opt_tosneax,   CanUseDirectWithRemovableRhsAndTempZP },
+    { "tosorax",   1, Opt_a_tosor,   WithSameXCanUseRemovableRhsWithTempZP },
+    { "tosorax",   2, Opt_tosorax,   MustHaveTempZP                        },
+    { "tosshlax",  2, Opt_tosshlax,  MustHaveTempZP                        },
+    { "tosshrax",  2, Opt_tosshrax,  MustHaveTempZP                        },
+    { "tossubax",  1, Opt_a_tossub,  WithSameXCanUseRemovableRhsWithTempZP },
+    { "tossubax",  2, Opt_tossubax,  CanUseRemovableRhsWithTempZP          },
+    { "tosugeax",  1, Opt_a_tosuge,  WithSameXMustHaveTempZP               },
+    { "tosugeax",  2, Opt_tosugeax,  CanUseRemovableRhsWithTempZP          },
+    { "tosugtax",  1, Opt_a_tosugt,  WithSameXMustHaveTempZP               },
+    { "tosugtax",  2, Opt_tosugtax,  CanUseRemovableRhsWithTempZP          },
+    { "tosuleax",  1, Opt_a_tosule,  WithSameXMustHaveTempZP               },
+    { "tosuleax",  2, Opt_tosuleax,  CanUseRemovableRhsWithTempZP          },
+    { "tosultax",  1, Opt_a_tosult,  WithSameXMustHaveTempZP               },
+    { "tosultax",  2, Opt_tosultax,  CanUseRemovableRhsWithTempZP          },
+    { "tosxorax",  1, Opt_a_tosxor,  WithSameXCanUseRemovableRhsWithTempZP },
+    { "tosxorax",  2, Opt_tosxorax,  MustHaveTempZP                        },
+/* END SORTED_RANKED.SH */
 };
 
-/* CAUTION: table must be sorted for bsearch */
-static const OptFuncDesc FuncRegATable[] = {
-/* BEGIN SORTED.SH */
-    { "tosandax",   Opt_a_tosand,  WithSameXCanUseRemovableRhsWithTempZP },
-    { "toseqax",    Opt_a_toseq,   WithSameXMustHaveTempZP               },
-    { "tosgeax",    Opt_a_tosuge,  WithSameXMustHaveTempZP               },
-    { "tosgtax",    Opt_a_tosugt,  WithSameXMustHaveTempZP               },
-    { "tosicmp",    Opt_a_tosicmp, WithSameXMustHaveTempZP               },
-    { "tosleax",    Opt_a_tosule,  WithSameXMustHaveTempZP               },
-    { "tosltax",    Opt_a_tosult,  WithSameXMustHaveTempZP               },
-    { "tosneax",    Opt_a_tosne,   WithSameXMustHaveTempZP               },
-    { "tosorax",    Opt_a_tosor,   WithSameXCanUseRemovableRhsWithTempZP },
-    { "tossubax",   Opt_a_tossub,  WithSameXCanUseRemovableRhsWithTempZP },
-    { "tosugeax",   Opt_a_tosuge,  WithSameXMustHaveTempZP               },
-    { "tosugtax",   Opt_a_tosugt,  WithSameXMustHaveTempZP               },
-    { "tosuleax",   Opt_a_tosule,  WithSameXMustHaveTempZP               },
-    { "tosultax",   Opt_a_tosult,  WithSameXMustHaveTempZP               },
-    { "tosxorax",   Opt_a_tosxor,  WithSameXCanUseRemovableRhsWithTempZP },
-/* END SORTED.SH */
-};
-
-#define FUNC_COUNT(Table) (sizeof(Table) / sizeof(Table[0]))
+#define FUNC_COUNT (sizeof(FuncTable) / sizeof(FuncTable[0]))
 
 
 
@@ -1829,12 +1811,40 @@ static int CmpFunc (const void* Key, const void* Func)
 
 
 
-static const OptFuncDesc* FindFunc (const OptFuncDesc FuncTable[], size_t Count, const char* Name)
-/* Find the function with the given name. Return a pointer to the table entry
-** or NULL if the function was not found.
+static const OptFuncDesc* FindFirstFunc (const char* Name)
+/* Find the first function with the given name among ranked variants.
+** Return a pointer to the table entry or NULL if the function was not found.
 */
 {
-    return bsearch (Name, FuncTable, Count, sizeof(OptFuncDesc), CmpFunc);
+    const OptFuncDesc* Desc;
+
+    Desc = bsearch (Name, FuncTable, FUNC_COUNT, sizeof(OptFuncDesc), CmpFunc);
+    if (Desc == 0) {
+        return 0; /* Not found */
+    }
+
+    /* Rewind the Desc pointer to the first match in the table */
+    while (Desc > FuncTable && CmpFunc (Name, Desc - 1) == 0) {
+        Desc -= 1;
+    }
+
+    /* First match */
+    return Desc;
+}
+
+
+
+static const OptFuncDesc* FindNextFunc (const OptFuncDesc* Desc, const char* Name)
+/* Find the next function with the given name among ranked variants.
+** Return a pointer to the table entry or NULL if no more matches found.
+*/
+{
+    /* Forward the Desc pointer to the next match in the table */
+    if (Desc < (FuncTable + FUNC_COUNT - 1) && CmpFunc (Name, Desc + 1) == 0) {
+        return Desc + 1; /* Next match */
+    }
+
+    return 0; /* No more matches */
 }
 
 
@@ -1845,16 +1855,25 @@ static int PreCondOk (StackOpData* D)
 */
 {
     const OptFuncDesc* Desc = D->OptFunc;
+    const char* OptName = Desc->Name;
 
     /* Common to all: must have a basic block */
     if (!CS_IsBasicBlock (D->Code, D->PushIndex, D->OpIndex)) {
         return 0; /* Fail */
     }
 
-    /* Call the pre-cond predicate if one was provided. */
-    if (Desc->PreCond == 0 || Desc->PreCond (D)) {
-        /* Preconditions passed (even if they were null). */
-        return 1;
+    /* Loop over matching variants until preconditions are satisfied or
+    ** no more matches found.
+    */
+    for (; Desc != 0; Desc = FindNextFunc (Desc, OptName)) {
+        /* Call the pre-cond predicate if one was provided. */
+        if (Desc->PreCond == 0 || Desc->PreCond (D)) {
+            /* Preconditions passed (even if they were null).
+            ** Update the OptFunc to the one that passed and return OK.
+            */
+            D->OptFunc = Desc;
+            return 1;
+        }
     }
 
     return 0; /* Preconditions failed */
@@ -1972,20 +1991,7 @@ unsigned OptStackOps (CodeSeg* S)
                     /* Subroutine call: Check if this is one of the functions,
                     ** we're going to replace.
                     */
-                    /* ### Note: A-only subopts are greedy here. When an A-only
-                    **  subopt exists (by name), only its preconditions are ever
-                    **  checked. There is no fallback to the full A/X subopts.
-                    **  When the A-only preconditions fail, good A/X cases are
-                    **  left unoptimized.
-                    **  The FuncTables should be merged into a single precondition
-                    **  system.
-                    */
-                    if (SameRegXValueAtOp (&Data, E)) {
-                        Data.OptFunc = FindFunc (FuncRegATable, FUNC_COUNT (FuncRegATable), E->Arg);
-                    }
-                    if (Data.OptFunc == 0) {
-                        Data.OptFunc = FindFunc (FuncTable, FUNC_COUNT (FuncTable), E->Arg);
-                    }
+                    Data.OptFunc = FindFirstFunc (E->Arg);
                     if (Data.OptFunc) {
                         /* Disallow removing Rhs loads if the registers are used */
                         SetIfOperandLoadUnremovable (&Data.Rhs, Data.UsedRegs);
