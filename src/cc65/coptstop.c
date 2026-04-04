@@ -64,6 +64,9 @@ struct OptFuncDesc {
     PreCondFunc         PreCond;        /* Precondition predicate pointer */
 };
 
+/* Termination for OptFuncDesc tables */
+#define OPTFUNCDESC_SENTINEL    { 0, 0, 0 }
+
 
 
 /*****************************************************************************/
@@ -2094,7 +2097,7 @@ unsigned OptBZero (CodeSeg* S)
 {
     static const OptFuncDesc FuncTable[] = {
         { "___bzero",   Opt___bzero,   WithAXlt100CanUseRegVarOrTempZP       },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2108,7 +2111,7 @@ unsigned OptPtrStore4 (CodeSeg* S)
     static const OptFuncDesc FuncTable[] = {
         { "staspidx",   Opt_staspidx,  CanUseRegVarOrTempZP                  },
         { "staxspidx",  Opt_staxspidx, WithUnusedACanUseRegVarOrTempZP       },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2123,7 +2126,7 @@ unsigned OptStkArith1 (CodeSeg* S)
 {
     static const OptFuncDesc FuncTable[] = {
         { "tossubax",   Opt_a_tossub,  WithSameXCanUseRemovableRhsWithTempZP },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2137,7 +2140,7 @@ unsigned OptStkArith2 (CodeSeg* S)
     static const OptFuncDesc FuncTable[] = {
         { "tosaddax",   Opt_tosaddax,  MustHaveTempZP                        },
         { "tossubax",   Opt_tossubax,  CanUseRemovableRhsWithTempZP          },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2154,7 +2157,7 @@ unsigned OptStkBitwise1 (CodeSeg* S)
         { "tosandax",   Opt_a_tosand,  WithSameXCanUseRemovableRhsWithTempZP },
         { "tosorax",    Opt_a_tosor,   WithSameXCanUseRemovableRhsWithTempZP },
         { "tosxorax",   Opt_a_tosxor,  WithSameXCanUseRemovableRhsWithTempZP },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2169,7 +2172,7 @@ unsigned OptStkBitwise2 (CodeSeg* S)
         { "tosandax",   Opt_tosandax,  MustHaveTempZP                        },
         { "tosorax",    Opt_tosorax,   MustHaveTempZP                        },
         { "tosxorax",   Opt_tosxorax,  MustHaveTempZP                        },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2185,7 +2188,7 @@ unsigned OptStkEqOps1 (CodeSeg* S)
     static const OptFuncDesc FuncTable[] = {
         { "toseqax",    Opt_a_toseq,   WithSameXMustHaveTempZP               },
         { "tosneax",    Opt_a_tosne,   WithSameXMustHaveTempZP               },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2199,7 +2202,7 @@ unsigned OptStkEqOps2 (CodeSeg* S)
     static const OptFuncDesc FuncTable[] = {
         { "toseqax",    Opt_toseqax,   CanUseDirectWithRemovableRhsAndTempZP },
         { "tosneax",    Opt_tosneax,   CanUseDirectWithRemovableRhsAndTempZP },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2221,7 +2224,7 @@ unsigned OptStkCmpOps1 (CodeSeg* S)
         { "tosugtax",   Opt_a_tosugt,  WithSameXMustHaveTempZP               },
         { "tosuleax",   Opt_a_tosule,  WithSameXMustHaveTempZP               },
         { "tosultax",   Opt_a_tosult,  WithSameXMustHaveTempZP               },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2239,7 +2242,7 @@ unsigned OptStkCmpOps2 (CodeSeg* S)
         { "tosugtax",   Opt_tosugtax,  CanUseRemovableRhsWithTempZP          },
         { "tosuleax",   Opt_tosuleax,  CanUseRemovableRhsWithTempZP          },
         { "tosultax",   Opt_tosultax,  CanUseRemovableRhsWithTempZP          },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2255,7 +2258,7 @@ unsigned OptStkShifts (CodeSeg* S)
         { "tosasrax",   Opt_tosasrax,  MustHaveTempZP                        },
         { "tosshlax",   Opt_tosshlax,  MustHaveTempZP                        },
         { "tosshrax",   Opt_tosshrax,  MustHaveTempZP                        },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
@@ -2273,7 +2276,7 @@ unsigned OptStkICmp1 (CodeSeg* S)
 {
     static const OptFuncDesc FuncTable[] = {
         { "tosicmp",    Opt_a_tosicmp, WithSameXMustHaveTempZP               },
-        { 0, 0, 0 }     /* Null-terminated list */
+        OPTFUNCDESC_SENTINEL    /* Null-terminated list */
     };
 
     return OptStackOps (S, FuncTable);
