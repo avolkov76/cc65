@@ -745,14 +745,23 @@ static unsigned RunOptGroup3 (CodeSeg* S)
         C += RunOptFunc (S, &DOptNegAX2, 1);
         C += RunOptFunc (S, &DOptBZero, 1);
         C += RunOptFunc (S, &DOptPtrStore4, 1);
-        /* Run the subgroup twice for complex expressions */
+
+        /* Run the subgroup up to twice for complex expressions */
         for (I = 0; I < 2; ++I) {
-            C += RunOptFunc (S, &DOptStkArith1, 1);
-            C += RunOptFunc (S, &DOptStkArith2, 1);
-            C += RunOptFunc (S, &DOptStkBitwise1, 1);
-            C += RunOptFunc (S, &DOptStkBitwise2, 1);
-            C += RunOptFunc (S, &DOptStkShifts, 1);
+            unsigned SubC = 0;
+
+            SubC += RunOptFunc (S, &DOptStkArith1, 1);
+            SubC += RunOptFunc (S, &DOptStkArith2, 1);
+            SubC += RunOptFunc (S, &DOptStkBitwise1, 1);
+            SubC += RunOptFunc (S, &DOptStkBitwise2, 1);
+            SubC += RunOptFunc (S, &DOptStkShifts, 1);
+
+            C += SubC;
+            if (!SubC) {
+                break;  /* No changes; skip the rest */
+            }
         }
+
         C += RunOptFunc (S, &DOptStkCmpOps1, 1);
         C += RunOptFunc (S, &DOptStkCmpOps2, 1);
         C += RunOptFunc (S, &DOptStkEqOps1, 1);
