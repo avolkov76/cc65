@@ -232,38 +232,6 @@ unsigned OptPtrLoad11 (CodeSeg* S);
 **      lda     (ptr1),y
 */
 
-unsigned OptPtrLoad12 (CodeSeg* S);
-/* Search for the sequence:
-**
-**      lda     regbank+n
-**      ldx     regbank+n+1
-**      sta     regsave
-**      stx     regsave+1
-**      clc
-**      adc     #$01
-**      bcc     L0005
-**      inx
-** L:   sta     regbank+n
-**      stx     regbank+n+1
-**      lda     regsave
-**      ldx     regsave+1
-**      ldy     #$00
-**      jsr     ldauidx
-**
-** and replace it by:
-**
-**      ldy     #$00
-**      ldx     #$00
-**      lda     (regbank+n),y
-**      inc     regbank+n
-**      bne     L1
-**      inc     regbank+n+1
-** L1:  tay                     <- only if flags are used
-**
-** This function must execute before OptPtrLoad7!
-**
-*/
-
 unsigned OptPtrLoad13 (CodeSeg* S);
 /* Search for the sequence:
 **

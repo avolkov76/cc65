@@ -177,7 +177,6 @@ OPTFUNCDEF ( OptNegAX2,                  200 );
 OPTFUNCDEF ( OptPrecalc,                 100 );
 OPTFUNCDEF ( OptPtrLoad1,                100 );
 OPTFUNCDEF ( OptPtrLoad11,                92 );
-OPTFUNCDEF ( OptPtrLoad12,                50 );
 OPTFUNCDEF ( OptPtrLoad13,                65 );
 OPTFUNCDEF ( OptPtrLoad14,               108 );
 OPTFUNCDEF ( OptPtrLoad15,                86 );
@@ -317,7 +316,6 @@ static OptFunc* OptFuncs[] = {
     &DOptPrecalc,
     &DOptPtrLoad1,
     &DOptPtrLoad11,
-    &DOptPtrLoad12,
     &DOptPtrLoad13,
     &DOptPtrLoad14,
     &DOptPtrLoad15,
@@ -738,7 +736,6 @@ static unsigned RunOptGroup1 (CodeSeg* S)
     Changes += RunOptFunc (S, &DOptPtrLoad19, 1); /* Before OptPtrLoad7 */
     Changes += RunOptFunc (S, &DOptPtrLoad7, 1);
     Changes += RunOptFunc (S, &DOptPtrLoad11, 1);
-    Changes += RunOptFunc (S, &DOptPtrLoad12, 1);
     Changes += RunOptFunc (S, &DOptPtrLoad13, 1);
     Changes += RunOptFunc (S, &DOptPtrLoad14, 1);
     Changes += RunOptFunc (S, &DOptPtrLoad15, 1);
