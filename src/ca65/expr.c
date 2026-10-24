@@ -85,6 +85,9 @@
 static ExprNode*        FreeExprNodes = 0;
 static unsigned         FreeNodeCount = 0;
 
+/* Current symbol creation policy while evaluating expressions */
+static SymFindAction ExprSymPolicy = SYM_ALLOC_NEW;
+
 
 
 /*****************************************************************************/
@@ -1098,7 +1101,7 @@ static ExprNode* Factor (void)
         case TOK_NAMESPACE:
         case TOK_IDENT:
         case TOK_LOCAL_IDENT:
-            N = Symbol (ParseAnySymName (SYM_ALLOC_NEW));
+            N = Symbol (ParseAnySymName (ExprSymPolicy));
             break;
 
         case TOK_ULABEL:
@@ -1704,6 +1707,45 @@ long ConstExpression (void)
 
     /* Return the value */
     return Val;
+}
+
+
+
+long DefinedConstExpression (void)
+/* Parse an expression. Check if the expression is const, and print an error
+** message if not. Forward symbol references are not allowed. Return the
+** value of the expression, or a dummy, if it is not constant.
+*/
+{
+    SymFindAction OldPolicy;
+    long          Val;
+
+    /* Switch the policy to prevent new symbol creation */
+    OldPolicy = SetExprSymbolPolicy (SYM_FIND_EXISTING);
+    /* Parse expression as usual */
+    Val = ConstExpression ();
+    /* Restore the previous symbol policy */
+    SetExprSymbolPolicy (OldPolicy);
+
+    return Val;
+}
+
+
+
+SymFindAction SetExprSymbolPolicy (SymFindAction NewPolicy)
+/* Set the new Symbol Policy for expressions being parsed, and return the
+** previous policy. Setting SYM_FIND_EXISTING prevents the parser from
+** creating new symbols.
+*/
+{
+    SymFindAction OldPolicy;
+
+    /* Remember the previous policy */
+    OldPolicy = ExprSymPolicy;
+    /* Set the new one */
+    ExprSymPolicy = NewPolicy;
+
+    return OldPolicy;
 }
 
 

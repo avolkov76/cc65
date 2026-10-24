@@ -265,7 +265,7 @@ void DoConditionals (void)
                     ** symbols or similar...
                     */
                     if (IfCond) {
-                        SetIfCond (D, ConstExpression ());
+                        SetIfCond (D, DefinedConstExpression ());
                         ExpectSep ();
                     }
 
@@ -295,7 +295,7 @@ void DoConditionals (void)
                 D = AllocIf (".IF", 1);
                 NextTok ();
                 if (IfCond) {
-                    SetIfCond (D, ConstExpression ());
+                    SetIfCond (D, DefinedConstExpression ());
                     ExpectSep ();
                 }
                 CalcOverallIfCond ();
