@@ -345,6 +345,8 @@ SymEntry* SymFindLocal (SymEntry* Parent, const StrBuf* Name, SymFindAction Acti
     SymEntry* S;
     int Cmp;
 
+    CHECK ((Action & SYM_ALLOC_NEW) == 0 || (Action & SYM_CONST_TAB) == 0);
+
     /* Local symbol, get the table */
     if (!Parent) {
         /* No last global, so there's no local table */
@@ -393,6 +395,8 @@ SymEntry* SymFind (SymTable* Scope, const StrBuf* Name, SymFindAction Action)
 */
 {
     SymEntry* S;
+
+    CHECK ((Action & SYM_ALLOC_NEW) == 0 || (Action & SYM_CONST_TAB) == 0);
 
     /* Global symbol: Get the hash value for the name */
     unsigned Hash = HashBuf (Name) % Scope->TableSlots;
@@ -548,7 +552,7 @@ static void SymCheckUndefined (SymEntry* S)
         /* Mark the symbol as unused removing all other flags */
         S->Flags = SF_UNUSED;
 
-    } else {
+    } else if ((S->Flags & SF_UNUSED) == 0) {
         /* The symbol is definitely undefined */
         if (S->Flags & SF_EXPORT) {
             /* We will not auto-import an export */

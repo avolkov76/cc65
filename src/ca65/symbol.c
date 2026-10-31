@@ -183,6 +183,12 @@ SymEntry* ParseScopedSymName (SymFindAction Action)
         */
         if (NoScope && (Action & SYM_ALLOC_NEW) == 0) {
             Sym = SymFindAny (Scope, &Ident);
+            /* If symbol is not found, return an orphan stand-in symbol when
+            ** tables must not be modified. Used by contant expressions.
+            */
+            if (Sym == 0 && (Action & SYM_CONST_TAB)) {
+                Sym = NewSymEntry (&Ident, SF_UNUSED);
+            }
         } else {
             Sym = SymFind (Scope, &Ident, Action);
         }

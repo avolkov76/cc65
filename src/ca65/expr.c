@@ -85,6 +85,9 @@
 static ExprNode*        FreeExprNodes = 0;
 static unsigned         FreeNodeCount = 0;
 
+/* Current symbol creation policy while evaluating expressions */
+static SymFindAction ExprSymPolicy = SYM_ALLOC_NEW;
+
 
 
 /*****************************************************************************/
@@ -340,8 +343,10 @@ static ExprNode* Symbol (SymEntry* S)
         /* Some weird error happened before */
         return GenLiteralExpr (0);
     } else {
-        /* Mark the symbol as referenced */
-        SymRef (S);
+        /* Mark the symbol as referenced, if allowed by policy */
+        if ((ExprSymPolicy & SYM_CONST_TAB) == 0) {
+            SymRef (S);
+        }
         /* If the symbol is a variable, return just its value, otherwise
         ** return a reference to the symbol.
         */
@@ -1098,7 +1103,7 @@ static ExprNode* Factor (void)
         case TOK_NAMESPACE:
         case TOK_IDENT:
         case TOK_LOCAL_IDENT:
-            N = Symbol (ParseAnySymName (SYM_ALLOC_NEW));
+            N = Symbol (ParseAnySymName (ExprSymPolicy));
             break;
 
         case TOK_ULABEL:
@@ -1676,11 +1681,15 @@ ExprNode* Expression (void)
 
 long ConstExpression (void)
 /* Parse an expression. Check if the expression is const, and print an error
-** message if not. Return the value of the expression, or a dummy, if it is
-** not constant.
+** message if not. For unqualified symbols, search enclosing scopes. Return the
+** value of the expression, or a dummy, if it is not constant.
 */
 {
     long Val;
+    SymFindAction OldPolicy;
+
+    /* Switch the policy to prevent new scoped symbol creation */
+    OldPolicy = SetExprSymbolPolicy (SYM_FIND_EXISTING | SYM_CONST_TAB);
 
     /* Read the expression */
     ExprNode* Expr = Expression ();
@@ -1702,8 +1711,29 @@ long ConstExpression (void)
     FreeExpr (Expr);
     ED_Done (&D);
 
+    /* Restore the previous symbol policy */
+    SetExprSymbolPolicy (OldPolicy);
+
     /* Return the value */
     return Val;
+}
+
+
+
+SymFindAction SetExprSymbolPolicy (SymFindAction NewPolicy)
+/* Set the new Symbol Policy for expressions being parsed, and return the
+** previous policy. Setting SYM_CONST_TAB prevents the parser from
+** modifying symbol tables.
+*/
+{
+    SymFindAction OldPolicy;
+
+    /* Remember the previous policy */
+    OldPolicy = ExprSymPolicy;
+    /* Set the new one */
+    ExprSymPolicy = NewPolicy;
+
+    return OldPolicy;
 }
 
 

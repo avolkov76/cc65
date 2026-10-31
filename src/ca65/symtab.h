@@ -59,6 +59,7 @@ typedef enum {
     SYM_FIND_EXISTING   = 0x00,
     SYM_ALLOC_NEW       = 0x01,
     SYM_CHECK_ONLY      = 0x02,
+    SYM_CONST_TAB       = 0x04,         /* Symbol tables shall not be modified */
 } SymFindAction;
 
 /* Symbol table flags */

@@ -41,6 +41,7 @@
 /* common */
 #include "coll.h"
 #include "exprdefs.h"
+#include "symtab.h"
 
 
 
@@ -67,8 +68,14 @@ ExprNode* Expression (void);
 
 long ConstExpression (void);
 /* Parse an expression. Check if the expression is const, and print an error
-** message if not. Return the value of the expression, or a dummy, if it is
-** not constant.
+** message if not. For unqualified symbols, search enclosing scopes. Return the
+** value of the expression, or a dummy, if it is not constant.
+*/
+
+SymFindAction SetExprSymbolPolicy (SymFindAction NewPolicy);
+/* Set the new SymbolPolicy for expressions being parsed, and return the
+** previous policy. Setting SYM_CONST_TAB prevents the parser from
+** modifying symbol tables.
 */
 
 void FreeExpr (ExprNode* Root);
